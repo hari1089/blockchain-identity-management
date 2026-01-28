@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hash Verification</title>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: "Times New Roman", serif;
+      background: linear-gradient(to bottom, #ffffff 65%, #b7dfe7 65%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .box {
+      width: 500px;
+      background: #f3f3f3;
+      padding: 40px;
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+      border-top: 6px solid #f05432;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 25px;
+      color: #f05432;
+      font-family: "Times New Roman", serif;
+    }
+
+    label {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      display: block;
+      margin-bottom: 10px;
+      font-family: "Times New Roman", serif;
+    }
+
+    input {
+      width: 80%;
+      padding: 15px;
+      border-radius: 26px;
+      border: 1px solid #c9c9c9;
+      margin: 0 auto 25px auto;
+      font-size: 16px;
+      display: block;
+      outline: none;
+      background: white;
+      font-family: "Times New Roman", serif;
+    }
+
+    button {
+      width: 80%;
+      padding: 15px;
+      border-radius: 26px;
+      background: #f05432;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: 0.25s;
+      margin: 0 auto;
+      display: block;
+      font-family: "Times New Roman", serif;
+    }
+
+    button:hover {
+      background: #d94626;
+    }
+
+    #status {
+      margin-top: 18px;
+      font-size: 16px;
+      font-family: "Times New Roman", serif;
+    }
+
+    #downloadBtn {
+      display: none;
+      width: 80%;
+      background: #2ca24c;
+      margin-top: 15px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Hash Verification</h2>
+
+  <label>Hash *</label>
+  <input id="hashValue" placeholder="Enter Hash Here">
+
+  <button onclick="verifyHash()">Verify Hash</button>
+
+  <p id="status"></p>
+
+  <button id="downloadBtn" onclick="downloadPDF()">Download Proof PDF</button>
+</div>
+
+<script>
+let proofData = null;
+
+async function verifyHash() {
+  const hash = document.getElementById("hashValue").value.trim();
+
+  const res = await fetch("https://hash-verify.onrender.com/verify-hash", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ hash })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    document.getElementById("status").innerHTML = "Invalid Hash";
+    document.getElementById("status").style.color = "red";
+    document.getElementById("downloadBtn").style.display = "none";
+    return;
+  }
+
+  document.getElementById("status").innerHTML =
+    "Verified: " + data.name + " (" + data.identity + ")";
+  document.getElementById("status").style.color = "green";
+
+  proofData = { ...data, hash };
+  document.getElementById("downloadBtn").style.display = "block";
+
+  // 🔥 METAMASK TRIGGER
+  if (data.triggerMetaMask) {
+    await triggerMetaMaskTransaction(hash);
+  }
+}
+
+// ------------------------------
+// 🔥 MetaMask Transaction Function
+// ------------------------------
+async function triggerMetaMaskTransaction(hash) {
+  if (!window.ethereum) {
+    alert("MetaMask not installed!");
+    return;
+  }
+
+  try {
+    const accounts = await ethereum.request({
+      method: "eth_requestAccounts"
+    });
+
+    const sender = accounts[0];
+
+    let clean = hash.replace(/^0x/, "");
+    if (clean.length % 2 !== 0) clean = clean.slice(0, -1);
+    clean = clean.slice(0, 64).padEnd(64, "0");
+
+    const txParams = {
+      from: sender,
+      to: "0x0000000000000000000000000000000000000001",
+      value: "0x0",
+      gas: "0x7A120",
+      data: "0x" + clean
+    };
+
+    const txHash = await ethereum.request({
+      method: "eth_sendTransaction",
+      params: [txParams]
+    });
+
+    document.getElementById("status").innerHTML +=
+      `<br><span style="color:green;">Stored on Blockchain ✔<br>Tx: ${txHash}</span>`;
+  } catch (err) {
+    console.error(err);
+    alert("MetaMask Error: " + err.message);
+  }
+}
+
+// ------------------------------
+// PDF DOWNLOAD
+// ------------------------------
+async function downloadPDF() {
+  const res = await fetch("https://hash-verify.onrender.com/generate-pdf", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(proofData)
+  });
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "verification_proof.pdf";
+  a.click();
+}
+</script>
+
+</body>
+</html>

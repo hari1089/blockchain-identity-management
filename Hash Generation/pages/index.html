@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Credential Generator</title>
+
+  <!-- Raleway font removed since we are using Times New Roman -->
+  <style>
+    body {
+      font-family: "Times New Roman", serif; /* FONT CHANGED */
+      background: linear-gradient(120deg, #ff5f9e, #b66cff);
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      width: 520px; /* PERFECT SIZE */
+      padding: 60px 50px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 45px rgba(0,0,0,0.18);
+      backdrop-filter: blur(18px);
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 34px;
+      color: white;
+      font-weight: 600;
+      margin-bottom: 20px;
+      font-family: "Times New Roman", serif;
+    }
+
+    .line {
+      width: 70%;
+      margin: 0 auto 30px auto;
+      height: 1.5px;
+      background: rgba(255,255,255,0.4);
+    }
+
+    input {
+      width: 92%; /* PERFECT ALIGNMENT */
+      padding: 16px 20px;
+      font-size: 17px;
+      border-radius: 35px;
+      border: none;
+      background: rgba(0, 0, 0, 0.28);
+      color: #fff;
+      outline: none;
+      margin-bottom: 25px;
+      letter-spacing: 0.5px;
+      font-family: "Times New Roman", serif;
+    }
+
+    input::placeholder {
+      color: #eee;
+      font-family: "Times New Roman", serif;
+    }
+
+    input:focus {
+      background: rgba(0, 0, 0, 0.33);
+      box-shadow: 0 0 10px rgba(255,255,255,0.35);
+    }
+
+    button {
+      width: 92%; /* SAME WIDTH AS INPUT */
+      padding: 16px;
+      background: white;
+      border: none;
+      border-radius: 35px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.25s;
+      color: #333;
+      font-family: "Times New Roman", serif;
+    }
+
+    button:hover {
+      background: #f2f2f2;
+      transform: translateY(-1px);
+    }
+
+    #msg {
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      font-family: "Times New Roman", serif;
+    }
+
+    .success { color: #00ffb3; }
+    .error { color: #ff6767; }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h2>Generate Credential ID</h2>
+    <div class="line"></div>
+
+    <input type="email" id="email" placeholder="Enter your email">
+
+    <button onclick="generate()">Generate Credential ID</button>
+
+    <p id="msg"></p>
+  </div>
+
+<script>
+  async function generate() {
+    const email = document.getElementById("email").value;
+    const msg = document.getElementById("msg");
+
+    msg.innerText = "Processing...";
+    msg.className = "";
+
+    const res = await fetch("https://credential-server.onrender.com/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      msg.innerText = "Credential ID sent to email!";
+      msg.className = "success";
+
+      setTimeout(() => {
+        window.location.href = "/signin.html";  
+      }, 1200);
+
+    } else {
+      msg.innerText = data.message;
+      msg.className = "error";
+    }
+  }
+</script>
+
+</body>
+</html>
